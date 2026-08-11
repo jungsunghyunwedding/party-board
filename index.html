@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>파티 보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #100F17;
+    --panel: #1B1929;
+    --panel-2: #242235;
+    --line: #35324a;
+    --gold: #E4B658;
+    --gold-dim: #4a3f27;
+    --violet: #8A7CF0;
+    --violet-dim: #2c2748;
+    --mint: #4FD1A5;
+    --coral: #E2665A;
+    --text: #F3F1FA;
+    --text-2: #9C96B8;
+    --text-3: #6C6688;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    min-height:100vh;
+    padding-bottom: 60px;
+  }
+  .mono{ font-family:"JetBrains Mono", monospace; }
+  .display{ font-family:"Black Han Sans", sans-serif; letter-spacing:0.5px; }
+
+  header{
+    position: sticky; top:0; z-index:10;
+    background: rgba(16,15,23,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+    padding: 18px 24px;
+  }
+  .header-row{
+    max-width: 1280px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .title-block h1{ margin:0; font-size:26px; color:var(--gold); }
+  .stats{ display:flex; gap:18px; margin-top:4px; align-items:center; flex-wrap:wrap; }
+  .stat{ font-size:13px; color:var(--text-2); }
+  .stat b{ color:var(--text); font-size:14px; }
+  .live-dot{ width:7px; height:7px; border-radius:50%; background: var(--mint); display:inline-block; margin-right:5px; }
+  .live-dot.stale{ background: var(--text-3); }
+
+  .nick-chip{
+    display:flex; align-items:center; gap:8px;
+    background: var(--panel-2); border:1px solid var(--line); border-radius:20px;
+    padding:6px 14px 6px 8px;
+  }
+  .nick-avatar{
+    width:26px; height:26px; border-radius:50%;
+    background: var(--violet-dim); color: var(--violet);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+  }
+  .nick-chip button{
+    background:none; border:none; color: var(--text-3); font-size:12px; cursor:pointer; text-decoration:underline;
+    padding:0;
+  }
+  .nick-meta{ font-size:11px; color:var(--text-3); }
+
+  main{
+    max-width: 1280px; margin: 24px auto; padding: 0 24px;
+    display:grid; grid-template-columns: 240px minmax(0,1fr) 300px; gap:16px;
+    align-items:start;
+  }
+  @media (max-width:1100px){
+    main{ grid-template-columns: 220px minmax(0,1fr); }
+    .chat-panel{ grid-column: 1 / -1; position:relative; top:auto; max-height:360px; }
+  }
+  @media (max-width:760px){
+    main{ grid-template-columns: 1fr; }
+  }
+
+  .banner{
+    background: var(--violet-dim); border:1px solid var(--violet);
+    border-radius:10px; padding:12px 16px; margin-bottom:14px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .banner .msg{ font-size:14px; }
+  .banner .msg b{ color:var(--gold); }
+  .banner .btns{ display:flex; gap:8px; }
+  .banner.error{ border-color: var(--coral); background: rgba(226,102,90,0.12); }
+  .banner.warn{ border-color: var(--gold); background: rgba(228,182,88,0.12); }
+
+  .btn{
+    background: var(--panel-2); color:var(--text);
+    border:1px solid var(--line); border-radius:7px;
+    padding:7px 13px; font-size:13px; cursor:pointer;
+    font-family:inherit;
+  }
+  .btn:hover{ border-color: var(--text-3); }
+  .btn.primary{ background: var(--violet); border-color:var(--violet); color:#151129; font-weight:700; }
+  .btn.primary:hover{ background:#9A8DFF; }
+  .btn.ghost{ background:none; border-color: var(--line); color:var(--text-2); }
+  .btn.danger{ border-color: var(--coral); color: var(--coral); background:none; }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn.sm{ padding:5px 10px; font-size:12px; }
+  .btn.xs{ padding:2px 7px; font-size:11px; border-radius:5px; }
+
+  input[type=text], input[type=password]{
+    background: var(--ink); border:1px solid var(--line); border-radius:7px;
+    color:var(--text); padding:8px 10px; font-size:13px; font-family:inherit;
+    outline:none; width:100%;
+  }
+  input[type=text]:focus, input[type=password]:focus{ border-color: var(--violet); }
+
+  select{
+    background: var(--ink); color: var(--text); border:1px solid var(--line);
+    border-radius:7px; padding:8px 9px; font-size:13px; font-family:inherit; outline:none;
+  }
+  select:focus{ border-color: var(--violet); }
+
+  .toolbar{ display:flex; justify-content:flex-end; margin-bottom:14px; gap:8px; }
+  .nominate-panel{
+    background: var(--panel); border:1px solid var(--violet); border-radius:10px;
+    padding:14px 16px; margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  }
+  .nominate-panel label{ font-size:12px; color: var(--text-2); margin-right:4px; }
+
+  .grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap:16px;
+  }
+
+  .card{
+    background: var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px; display:flex; flex-direction:column; gap:10px;
+    transition: border-color 0.15s ease;
+  }
+  .card.full{ border-color: var(--gold-dim); }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .pname-wrap{ display:flex; align-items:center; gap:6px; min-width:0; flex:1; }
+  .pname{ font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pcount{ font-size:13px; color:var(--text-2); }
+  .pcount.full{ color: var(--gold); }
+
+  .frame{ display:flex; flex-direction:column; gap:3px; }
+  .slot{
+    display:flex; align-items:center; justify-content:space-between;
+    min-height:36px; padding:4px 9px; border-radius:5px;
+    background: var(--ink); border:1px dashed var(--line);
+    font-size:12.5px; color: var(--text-3);
+    transition: background 0.1s ease, border-color 0.1s ease;
+  }
+  .slot.empty{ cursor:pointer; }
+  .slot.empty:hover{ border-color: var(--violet); color: var(--violet); }
+  .slot.filled{ color: var(--text); border:1px solid var(--panel-2); background:var(--panel-2); cursor:grab; }
+  .slot.filled:active{ cursor:grabbing; }
+  .slot.leader{ border-color: var(--gold); background: var(--gold-dim); }
+  .slot.dragover{ outline: 2px solid var(--violet); outline-offset:-2px; }
+  .slot-main{ min-width:0; flex:1; }
+  .slot-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
+  .slot-tags{ display:flex; flex-wrap:wrap; gap:3px; margin-top:2px; }
+  .slot-right{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
+  .badge{
+    font-size:10px; color:#1a1608; background:var(--gold); border-radius:4px;
+    padding:1px 5px; font-weight:700;
+  }
+  .tag{
+    font-size:10px; color:var(--violet); background:var(--violet-dim);
+    border-radius:4px; padding:1px 5px;
+  }
+  .tag.skill{ color:var(--mint); background:rgba(79,209,165,0.12); }
+
+  .card-foot{ display:flex; justify-content:flex-end; }
+
+  .new-card{
+    border-style:dashed; align-items:center; justify-content:center;
+    color: var(--text-2); cursor:pointer; min-height: 130px;
+  }
+  .new-card:hover{ border-color: var(--violet); color: var(--text); }
+
+  .empty-note{ color: var(--text-3); font-size:13px; text-align:center; padding: 40px 0; }
+  footer{ max-width:1280px; margin: 30px auto 0; padding: 0 24px; color: var(--text-3); font-size:12px; }
+
+  .presence-panel, .chat-panel{
+    background: var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px; height:fit-content; position:sticky; top:90px;
+  }
+  .presence-panel h3, .chat-panel h3{ margin:0 0 10px; font-size:14px; color:var(--gold); }
+  .presence-list{ display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow:auto; }
+  .chat-panel{
+    display:flex; flex-direction:column; min-height:420px; max-height:calc(100vh - 120px);
+  }
+  .chat-list{
+    flex:1; overflow:auto; display:flex; flex-direction:column; gap:8px;
+    background: var(--ink); border:1px solid var(--line); border-radius:8px;
+    padding:10px; min-height:220px;
+  }
+  .chat-msg{ font-size:12.5px; line-height:1.4; }
+  .chat-msg .meta{ color:var(--text-3); font-size:11px; margin-bottom:2px; display:flex; gap:6px; flex-wrap:wrap; }
+  .chat-msg .meta .who{ color:var(--gold); font-weight:700; }
+  .chat-msg.me .meta .who{ color:var(--violet); }
+  .chat-msg .body{ color:var(--text); word-break:break-word; white-space:pre-wrap; }
+  .chat-msg.system .body{ color:var(--text-2); font-style:italic; }
+  .chat-empty{ color:var(--text-3); font-size:12px; text-align:center; padding:20px 8px; }
+  .chat-form{ display:flex; gap:6px; margin-top:10px; }
+  .chat-form input{ flex:1; width:auto; }
+  .chat-form .btn{ flex-shrink:0; }
+  .presence-item{
+    background: var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:10px;
+  }
+  .presence-item.me{ border-color: var(--violet); }
+  .presence-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:6px; }
+  .presence-name{ font-size:13px; font-weight:700; }
+  .presence-empty{ color:var(--text-3); font-size:12px; padding:8px 0; }
+
+  .gate{
+    position:fixed; inset:0; background: rgba(16,15,23,0.96); z-index:50;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  .gate-box{
+    background: var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:28px; width:min(420px, 100%); text-align:left;
+  }
+  .gate-box h2{ margin:0 0 6px; color: var(--gold); font-size:22px; text-align:center; }
+  .gate-box > p{ color: var(--text-2); font-size:13px; margin:0 0 18px; text-align:center; }
+  .gate-field{ margin-bottom:12px; }
+  .gate-field label{ display:block; font-size:12px; color:var(--text-2); margin-bottom:5px; }
+  .gate-field .hint{ font-size:11px; color:var(--text-3); margin-top:4px; }
+  .class-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .class-grid label, .skill-grid label{
+    display:flex; align-items:center; gap:6px;
+    background:var(--ink); border:1px solid var(--line); border-radius:7px;
+    padding:8px 10px; font-size:13px; cursor:pointer;
+  }
+  .class-grid input, .skill-grid input{ accent-color: var(--violet); }
+  .skill-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .gate-box .btn{ width:100%; margin-top:8px; }
+  .gate-error{ color:var(--coral); font-size:12px; margin-top:8px; text-align:center; min-height:18px; }
+
+  .pull-modal{
+    position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40;
+    display:none; align-items:center; justify-content:center; padding:16px;
+  }
+  .pull-modal.open{ display:flex; }
+  .pull-box{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:20px; width:min(360px,100%);
+  }
+  .pull-box h3{ margin:0 0 8px; color:var(--gold); }
+  .pull-box p{ margin:0 0 12px; color:var(--text-2); font-size:13px; }
+  .pull-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+</style>
+</head>
+<body>
+
+<div id="config-error" class="banner error" style="display:none; margin:16px 24px 0; max-width:1100px; margin-left:auto; margin-right:auto;">
+  <div class="msg">Supabase 설정이 없습니다. <b>config.js</b>를 확인하세요.</div>
+</div>
+
+<div id="gate" class="gate" style="display:none;">
+  <div class="gate-box">
+    <h2 class="display">파티 보드</h2>
+    <p>공유 비밀번호와 프로필을 입력한 뒤 입장하세요.</p>
+    <div class="gate-field">
+      <label>입장 비밀번호</label>
+      <input type="password" id="gate-password" placeholder="비밀번호" autocomplete="current-password" />
+    </div>
+    <div class="gate-field">
+      <label>닉네임</label>
+      <input type="text" id="gate-nick" placeholder="닉네임" maxlength="16" />
+    </div>
+    <div class="gate-field">
+      <label>클래스</label>
+      <div class="class-grid" id="gate-class">
+        <label><input type="radio" name="gate-class" value="요정" checked> 요정</label>
+        <label><input type="radio" name="gate-class" value="기사"> 기사</label>
+        <label><input type="radio" name="gate-class" value="군주"> 군주</label>
+        <label><input type="radio" name="gate-class" value="마법사"> 마법사</label>
+      </div>
+    </div>
+    <div class="gate-field">
+      <label>특이사항 (스킬)</label>
+      <div class="skill-grid" id="gate-skills">
+        <label><input type="checkbox" value="트리플"> 트리플</label>
+        <label><input type="checkbox" value="스턴"> 스턴</label>
+        <label><input type="checkbox" value="뮨"> 뮨</label>
+        <label><input type="checkbox" value="어스"> 어스</label>
+        <label><input type="checkbox" value="스톰"> 스톰</label>
+      </div>
+      <input type="text" id="gate-skill-custom" placeholder="기타 스킬 (선택)" maxlength="16" style="margin-top:6px;" />
+    </div>
+    <button class="btn primary" id="gate-submit">입장하기</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<div id="pull-modal" class="pull-modal">
+  <div class="pull-box">
+    <h3>파티로 끌어오기</h3>
+    <p id="pull-target-info"></p>
+    <label style="font-size:12px;color:var(--text-2);">파티 선택</label>
+    <select id="pull-party-select" style="width:100%;margin-top:6px;"></select>
+    <div class="pull-actions">
+      <button class="btn ghost sm" id="pull-cancel">취소</button>
+      <button class="btn primary sm" id="pull-confirm">끌어오기</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-row">
+    <div class="title-block">
+      <h1 class="display">파티 보드</h1>
+      <div class="stats">
+        <div class="stat">참가 <b class="mono" id="stat-total">0</b></div>
+        <div class="stat">파티 <b class="mono" id="stat-parties">0</b></div>
+        <div class="stat">마감 <b class="mono" id="stat-full">0</b></div>
+        <div class="stat">접속 <b class="mono" id="stat-online">0</b></div>
+        <div class="stat"><span class="live-dot" id="live-dot"></span><span id="sync-status">동기화 대기 중</span></div>
+      </div>
+    </div>
+    <div class="nick-chip">
+      <div class="nick-avatar" id="nick-avatar">?</div>
+      <div>
+        <div id="nick-label">-</div>
+        <div class="nick-meta" id="nick-meta"></div>
+      </div>
+      <button id="nick-edit">변경</button>
+      <button id="logout-btn">나가기</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside class="presence-panel">
+    <h3>접속자 <span class="mono" id="presence-count">0</span></h3>
+    <div class="presence-list" id="presence-list"></div>
+  </aside>
+  <div>
+    <div id="sync-banner"></div>
+    <div id="nominations"></div>
+    <div class="toolbar">
+      <button class="btn ghost sm" id="global-nominate-btn">닉네임 지명하기</button>
+    </div>
+    <div id="nominate-panel"></div>
+    <div id="board" class="grid"></div>
+  </div>
+  <aside class="chat-panel">
+    <h3>실시간 채팅</h3>
+    <div class="chat-list" id="chat-list"><div class="chat-empty">아직 메시지가 없습니다.</div></div>
+    <form class="chat-form" id="chat-form">
+      <input type="text" id="chat-input" maxlength="200" placeholder="메시지 입력…" autocomplete="off" />
+      <button class="btn primary sm" type="submit">전송</button>
+    </form>
+  </aside>
+</main>
+
+<footer>
+  <span>빈 자리 클릭·드래그로 파티를 짜고, 오른쪽 채팅으로 대화하세요. 접속자에서 클래스/스킬을 보고 끌어올 수 있습니다.</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const BOARD_KEY = "party-board-state-v2";
+const PROFILE_KEY = "party-board-profile-v2";
+const AUTH_KEY = "party-board-authed-v1";
+const CLIENT_KEY = "party-board-client-id-v1";
+const MAX_MEMBERS = 8;
+const POLL_MS = 4000;
+const HEARTBEAT_MS = 3000;
+const ONLINE_TTL_MS = 15000;
+const CHAT_LIMIT = 80;
+const CLASSES = ["요정", "기사", "군주", "마법사"];
+const SKILL_PRESETS = ["트리플", "스턴", "뮨", "어스", "스톰"];
+
+let supabaseClient = null;
+let profile = null; // { nickname, class, skills }
+let board = { parties: [], nominations: [], partyCounter: 0 };
+let boardVersion = 0;
+let uiBusy = false;
+let nominatePanelOpen = false;
+let saveInFlight = 0;
+let pollTimer = null;
+let heartbeatTimer = null;
+let realtimeChannel = null;
+let onlineUsers = [];
+let chatMessages = [];
+let pullTarget = null;
+let clientId = null;
+let audioCtx = null;
+
+function initSupabase(){
+  const cfg = window.SUPABASE_CONFIG;
+  if(!cfg || !cfg.url || !cfg.anonKey || cfg.url.includes("YOUR_PROJECT")){
+    document.getElementById("config-error").style.display = "flex";
+    return false;
+  }
+  supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
+  return true;
+}
+
+function genId(prefix){
+  return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+function initials(name){ return (name || "?").trim().slice(0,2); }
+function escapeHtml(s){
+  return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function sha256Hex(text){
+  const data = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+function getClientId(){
+  try{
+    let id = localStorage.getItem(CLIENT_KEY);
+    if(!id){
+      id = genId("client");
+      localStorage.setItem(CLIENT_KEY, id);
+    }
+    return id;
+  }catch(e){
+    return genId("client");
+  }
+}
+
+function loadProfile(){
+  try{
+    const raw = localStorage.getItem(PROFILE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveProfile(p){
+  try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+  catch(e){ console.error("프로필 저장 실패", e); }
+}
+function isAuthed(){
+  try{ return localStorage.getItem(AUTH_KEY) === "1"; }
+  catch(e){ return false; }
+}
+function setAuthed(v){
+  try{ localStorage.setItem(AUTH_KEY, v ? "1" : "0"); }
+  catch(e){}
+}
+
+function memberName(m){
+  if(!m) return null;
+  if(typeof m === "string") return m;
+  return m.nickname || null;
+}
+function toMember(m){
+  if(!m) return null;
+  if(typeof m === "string") return { nickname: m, class: "", skills: [] };
+  return {
+    nickname: m.nickname || "",
+    class: m.class || "",
+    skills: Array.isArray(m.skills) ? m.skills : []
+  };
+}
+function myMember(){
+  return {
+    nickname: profile.nickname,
+    class: profile.class || "",
+    skills: Array.isArray(profile.skills) ? profile.skills.slice() : []
+  };
+}
+function leaderName(party){
+  return memberName(party.leader) || (typeof party.leader === "string" ? party.leader : null);
+}
+
+function normalizeSlots(slots){
+  const arr = Array.isArray(slots) ? slots.slice(0, MAX_MEMBERS) : [];
+  while(arr.length < MAX_MEMBERS) arr.push(null);
+  return arr.map(s => s ? toMember(s) : null);
+}
+
+function normalizeBoard(raw){
+  const b = raw || {};
+  return {
+    parties: (b.parties || []).map(p => ({
+      id: p.id,
+      name: p.name,
+      leader: p.leader ? (typeof p.leader === "string" ? p.leader : memberName(p.leader)) : null,
+      slots: normalizeSlots(p.slots),
+      createdAt: p.createdAt || Date.now()
+    })),
+    nominations: b.nominations || [],
+    partyCounter: b.partyCounter || 0
+  };
+}
+
+function cloneBoard(b){
+  return JSON.parse(JSON.stringify(b));
+}
+
+async function fetchBoardRow(){
+  const { data, error } = await supabaseClient
+    .from("party_board_state")
+    .select("value, version")
+    .eq("board_key", BOARD_KEY)
+    .maybeSingle();
+  if(error) throw error;
+  return {
+    board: data?.value ? normalizeBoard(data.value) : { parties: [], nominations: [], partyCounter: 0 },
+    version: data?.version ?? 0
+  };
+}
+
+async function fetchBoard(){
+  try{
+    const row = await fetchBoardRow();
+    boardVersion = row.version;
+    return row.board;
+  }catch(e){
+    console.error("보드 조회 오류", e);
+    return { parties: [], nominations: [], partyCounter: 0 };
+  }
+}
+
+async function saveBoardWithVersion(next, expectedVersion){
+  const { data, error } = await supabaseClient
+    .from("party_board_state")
+    .update({
+      value: next,
+      version: expectedVersion + 1,
+      updated_at: new Date().toISOString()
+    })
+    .eq("board_key", BOARD_KEY)
+    .eq("version", expectedVersion)
+    .select("version")
+    .maybeSingle();
+  if(error) throw error;
+  return data;
+}
+
+async function persistBoard(mutatorFn, alreadyApplied){
+  saveInFlight++;
+  updateSyncLabel();
+  try{
+    for(let attempt = 0; attempt < 5; attempt++){
+      let expected;
+      let working;
+      if(attempt === 0 && alreadyApplied){
+        expected = boardVersion;
+        working = cloneBoard(board);
+      }else{
+        const row = await fetchBoardRow();
+        board = row.board;
+        boardVersion = row.version;
+        expected = boardVersion;
+        working = cloneBoard(board);
+        mutatorFn(working);
+        showSyncBanner("다른 사람의 변경과 충돌해 다시 저장합니다…");
+      }
+      const saved = await saveBoardWithVersion(working, expected);
+      if(saved){
+        board = normalizeBoard(working);
+        boardVersion = saved.version;
+        showSyncBanner("");
+        render();
+        return true;
+      }
+    }
+    showSyncBanner("저장 충돌이 반복됩니다. 잠시 후 다시 시도하세요.", true);
+    const row = await fetchBoardRow();
+    board = row.board;
+    boardVersion = row.version;
+    render();
+    return false;
+  }catch(e){
+    console.error("보드 저장 오류", e);
+    showSyncBanner("저장 실패: " + (e.message || e), true);
+    return false;
+  }finally{
+    saveInFlight--;
+    updateSyncLabel();
+  }
+}
+
+function showSyncBanner(msg, isError){
+  const el = document.getElementById("sync-banner");
+  if(!el) return;
+  if(!msg){ el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="banner ${isError ? "error" : "warn"}"><div class="msg">${escapeHtml(msg)}</div></div>`;
+  if(!isError) setTimeout(() => { if(el.innerHTML.includes(msg)) el.innerHTML = ""; }, 2500);
+}
+
+function applyRemoteBoard(next, version){
+  if(uiBusy) return;
+  if(typeof version === "number" && version <= boardVersion && saveInFlight > 0) return;
+  if(typeof version === "number" && version < boardVersion) return;
+  board = normalizeBoard(next);
+  if(typeof version === "number") boardVersion = version;
+  render();
+}
+
+function setupRealtime(){
+  if(!supabaseClient || realtimeChannel) return;
+  realtimeChannel = supabaseClient
+    .channel("party-board-" + BOARD_KEY)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "party_board_state", filter: "board_key=eq." + BOARD_KEY },
+      (payload) => {
+        const row = payload.new;
+        if(row?.value != null) applyRemoteBoard(row.value, row.version);
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "presence" },
+      () => { refreshPresence(); }
+    )
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "chat_messages" },
+      (payload) => {
+        if(payload.new) appendChatMessage(payload.new);
+      }
+    )
+    .subscribe((status) => {
+      if(status === "SUBSCRIBED" && saveInFlight === 0) updateSyncLabel();
+    });
+}
+
+function ensureAudio(){
+  if(!audioCtx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    audioCtx = new Ctx();
+  }
+  if(audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(ctx, freq, start, dur, type, gainValue){
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || "triangle";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(gainValue || 0.18, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.02);
+}
+
+function playFanfare(){
+  try{
+    const ctx = ensureAudio();
+    if(!ctx) return;
+    const t0 = ctx.currentTime + 0.02;
+    const notes = [
+      [523.25, 0.00, 0.18],
+      [659.25, 0.14, 0.18],
+      [783.99, 0.28, 0.18],
+      [1046.5, 0.42, 0.35],
+      [783.99, 0.70, 0.14],
+      [1046.5, 0.84, 0.45]
+    ];
+    notes.forEach(([freq, offset, dur]) => {
+      playTone(ctx, freq, t0 + offset, dur, "triangle", 0.16);
+      playTone(ctx, freq * 2, t0 + offset, dur * 0.8, "square", 0.04);
+    });
+  }catch(e){
+    console.warn("팡파레 재생 실패", e);
+  }
+}
+
+function formatChatTime(iso){
+  try{
+    return new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  }catch(e){ return ""; }
+}
+
+function renderChat(){
+  const list = document.getElementById("chat-list");
+  if(!list) return;
+  if(!chatMessages.length){
+    list.innerHTML = `<div class="chat-empty">아직 메시지가 없습니다. 첫 메시지를 보내보세요.</div>`;
+    return;
+  }
+  const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+  list.innerHTML = chatMessages.map(m => {
+    const isMe = profile && m.nickname === profile.nickname;
+    const isSystem = m.class === "__system__";
+    return `
+      <div class="chat-msg ${isMe ? "me" : ""} ${isSystem ? "system" : ""}">
+        <div class="meta">
+          <span class="who">${escapeHtml(m.nickname)}</span>
+          ${m.class && !isSystem ? `<span class="tag">${escapeHtml(m.class)}</span>` : ""}
+          <span>${formatChatTime(m.created_at)}</span>
+        </div>
+        <div class="body">${escapeHtml(m.body)}</div>
+      </div>`;
+  }).join("");
+  if(nearBottom || !list.dataset.ready){
+    list.scrollTop = list.scrollHeight;
+    list.dataset.ready = "1";
+  }
+}
+
+function appendChatMessage(msg){
+  if(!msg || !msg.id) return;
+  if(chatMessages.some(m => m.id === msg.id)) return;
+  chatMessages.push(msg);
+  if(chatMessages.length > CHAT_LIMIT) chatMessages = chatMessages.slice(-CHAT_LIMIT);
+  renderChat();
+}
+
+async function loadChat(){
+  if(!supabaseClient) return;
+  try{
+    const { data, error } = await supabaseClient
+      .from("chat_messages")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(CHAT_LIMIT);
+    if(error) throw error;
+    chatMessages = (data || []).reverse();
+    renderChat();
+  }catch(e){
+    console.error("채팅 로드 오류", e);
+  }
+}
+
+async function sendChat(body){
+  body = (body || "").trim().slice(0, 200);
+  if(!body || !profile) return;
+  const { error } = await supabaseClient.from("chat_messages").insert({
+    nickname: profile.nickname,
+    class: profile.class || "",
+    body
+  });
+  if(error){
+    console.error("채팅 전송 오류", error);
+    alert("채팅 전송에 실패했습니다. schema.sql의 chat_messages 테이블을 확인하세요.");
+  }
+}
+
+async function announceJoin(){
+  if(!profile || !supabaseClient) return;
+  try{
+    await supabaseClient.from("chat_messages").insert({
+      nickname: "시스템",
+      class: "__system__",
+      body: `${profile.nickname}님이 입장했습니다. (${profile.class || "-"})`
+    });
+  }catch(e){}
+}
+
+function updateSyncLabel(){
+  const dot = document.getElementById("live-dot");
+  const label = document.getElementById("sync-status");
+  if(!dot || !label) return;
+  if(saveInFlight > 0){
+    dot.classList.add("stale");
+    label.textContent = "저장 중… v" + boardVersion;
+  }else{
+    dot.classList.remove("stale");
+    label.textContent = "실시간 · v" + boardVersion + " · " + new Date().toLocaleTimeString("ko-KR");
+  }
+}
+
+function memberCount(party){ return party.slots.filter(Boolean).length; }
+
+function removeNicknameEverywhere(b, name){
+  b.parties.forEach(p => {
+    const idx = p.slots.findIndex(s => memberName(s) === name);
+    if(idx !== -1){
+      p.slots[idx] = null;
+      if(leaderName(p) === name){
+        const remaining = p.slots.find(Boolean);
+        p.leader = remaining ? memberName(remaining) : null;
+      }
+    }
+  });
+}
+
+function applyLocalChange(mutatorFn){
+  mutatorFn(board);
+  render();
+  persistBoard(mutatorFn, true);
+}
+
+function createParty(){
+  applyLocalChange(b => {
+    b.partyCounter = (b.partyCounter || 0) + 1;
+    b.parties.unshift({
+      id: genId("party"),
+      name: b.partyCounter + "파티",
+      leader: null,
+      slots: new Array(MAX_MEMBERS).fill(null),
+      createdAt: Date.now()
+    });
+  });
+}
+
+function renameParty(partyId){
+  const party = board.parties.find(p => p.id === partyId);
+  if(!party) return;
+  const next = prompt("파티 이름을 입력하세요", party.name || "");
+  if(next === null) return;
+  const trimmed = next.trim().slice(0, 24);
+  if(!trimmed || trimmed === party.name) return;
+  applyLocalChange(b => {
+    const p = b.parties.find(x => x.id === partyId);
+    if(p) p.name = trimmed;
+  });
+}
+
+function deleteParty(partyId){
+  applyLocalChange(b => {
+    const party = b.parties.find(p => p.id === partyId);
+    if(party && memberCount(party) > 0) return;
+    b.parties = b.parties.filter(p => p.id !== partyId);
+    b.nominations = b.nominations.filter(n => n.partyId !== partyId);
+  });
+}
+
+function joinSlot(partyId, index){
+  applyLocalChange(b => {
+    const party = b.parties.find(p => p.id === partyId);
+    if(!party || party.slots[index]) return;
+    removeNicknameEverywhere(b, profile.nickname);
+    party.slots[index] = myMember();
+    if(!party.leader) party.leader = profile.nickname;
+  });
+}
+
+function removeFromSlot(partyId, index){
+  applyLocalChange(b => {
+    const party = b.parties.find(p => p.id === partyId);
+    if(!party) return;
+    const m = party.slots[index];
+    if(!m) return;
+    const name = memberName(m);
+    party.slots[index] = null;
+    if(leaderName(party) === name){
+      const remaining = party.slots.find(Boolean);
+      party.leader = remaining ? memberName(remaining) : null;
+    }
+  });
+}
+
+function moveMember(fromPartyId, fromIndex, toPartyId, toIndex){
+  if(fromPartyId === toPartyId && fromIndex === toIndex) return;
+  applyLocalChange(b => {
+    const fromParty = b.parties.find(p => p.id === fromPartyId);
+    const toParty = b.parties.find(p => p.id === toPartyId);
+    if(!fromParty || !toParty) return;
+    const moving = fromParty.slots[fromIndex];
+    if(!moving) return;
+    const target = toParty.slots[toIndex];
+    const movingName = memberName(moving);
+    const targetName = memberName(target);
+
+    toParty.slots[toIndex] = moving;
+    fromParty.slots[fromIndex] = target || null;
+
+    if(leaderName(fromParty) === movingName) fromParty.leader = targetName || null;
+    if(!toParty.leader && memberCount(toParty) >= 1) toParty.leader = toParty.leader || movingName;
+    if(fromParty.id !== toParty.id && targetName && !fromParty.leader) fromParty.leader = targetName;
+  });
+}
+
+function setLeader(partyId, name){
+  applyLocalChange(b => {
+    const party = b.parties.find(p => p.id === partyId);
+    if(!party || !party.slots.some(s => memberName(s) === name)) return;
+    party.leader = name;
+  });
+}
+
+function pullIntoParty(partyId, member){
+  applyLocalChange(b => {
+    const party = b.parties.find(p => p.id === partyId);
+    if(!party) return;
+    const openIndex = party.slots.findIndex(s => !s);
+    if(openIndex === -1){ alert("빈 자리가 없습니다."); return; }
+    const name = memberName(member);
+    removeNicknameEverywhere(b, name);
+    party.slots[openIndex] = toMember(member);
+    if(!party.leader) party.leader = name;
+  });
+}
+
+function sendNomination(partyId, target){
+  target = (target || "").trim();
+  if(!target) return;
+  const party = board.parties.find(p => p.id === partyId);
+  if(!party){ alert("파티를 찾을 수 없습니다."); return; }
+  if(memberCount(party) >= MAX_MEMBERS){ alert("이미 정원이 찬 파티입니다."); return; }
+  const dup = board.nominations.find(n => n.partyId === partyId && n.target === target && n.status === "pending");
+  if(dup){ alert("이미 지명 요청을 보냈습니다."); return; }
+  applyLocalChange(b => {
+    b.nominations.push({ id: genId("nom"), partyId, target, by: profile.nickname, status: "pending", createdAt: Date.now() });
+  });
+}
+
+function respondNomination(nomId, accept){
+  applyLocalChange(b => {
+    const nom = b.nominations.find(n => n.id === nomId);
+    if(!nom) return;
+    if(accept){
+      const party = b.parties.find(p => p.id === nom.partyId);
+      const openIndex = party ? party.slots.findIndex(s => !s) : -1;
+      if(party && openIndex !== -1){
+        removeNicknameEverywhere(b, profile.nickname);
+        party.slots[openIndex] = myMember();
+        if(!party.leader) party.leader = profile.nickname;
+      }else{
+        alert("파티 정원이 가득 찼거나 이미 사라진 파티입니다.");
+      }
+    }
+    b.nominations = b.nominations.filter(n => n.id !== nomId);
+  });
+}
+
+function renderMemberTags(m){
+  const tags = [];
+  if(m.class) tags.push(`<span class="tag">${escapeHtml(m.class)}</span>`);
+  (m.skills || []).slice(0, 4).forEach(s => {
+    tags.push(`<span class="tag skill">${escapeHtml(s)}</span>`);
+  });
+  return tags.length ? `<div class="slot-tags">${tags.join("")}</div>` : "";
+}
+
+function renderPresence(){
+  const list = document.getElementById("presence-list");
+  const countEl = document.getElementById("presence-count");
+  const onlineStat = document.getElementById("stat-online");
+  const now = Date.now();
+  const alive = onlineUsers.filter(u => now - new Date(u.last_seen).getTime() < ONLINE_TTL_MS);
+  countEl.textContent = alive.length;
+  onlineStat.textContent = alive.length;
+
+  if(alive.length === 0){
+    list.innerHTML = `<div class="presence-empty">접속자가 없습니다.</div>`;
+    return;
+  }
+
+  list.innerHTML = alive.map(u => {
+    const isMe = u.client_id === clientId;
+    const skills = (u.skills || []).map(s => `<span class="tag skill">${escapeHtml(s)}</span>`).join("");
+    return `
+      <div class="presence-item ${isMe ? "me" : ""}">
+        <div class="presence-top">
+          <div>
+            <div class="presence-name">${escapeHtml(u.nickname)}${isMe ? " (나)" : ""}</div>
+            <div class="slot-tags" style="margin-top:4px;">
+              ${u.class ? `<span class="tag">${escapeHtml(u.class)}</span>` : ""}
+              ${skills}
+            </div>
+          </div>
+          ${!isMe ? `<button class="btn xs primary" data-pull-client="${escapeHtml(u.client_id)}">끌어오기</button>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+
+  list.querySelectorAll("[data-pull-client]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const user = alive.find(u => u.client_id === btn.dataset.pullClient);
+      if(user) openPullModal(user);
+    });
+  });
+}
+
+function openPullModal(user){
+  pullTarget = user;
+  const modal = document.getElementById("pull-modal");
+  const info = document.getElementById("pull-target-info");
+  const select = document.getElementById("pull-party-select");
+  const skills = (user.skills || []).join(", ") || "없음";
+  info.innerHTML = `<b>${escapeHtml(user.nickname)}</b> · ${escapeHtml(user.class || "-")} · ${escapeHtml(skills)}`;
+  const options = board.parties.map(p => {
+    const c = memberCount(p);
+    const full = c >= MAX_MEMBERS;
+    return `<option value="${p.id}" ${full ? "disabled" : ""}>${escapeHtml(p.name)} (${c}/${MAX_MEMBERS}${full ? " · 마감" : ""})</option>`;
+  }).join("");
+  select.innerHTML = `<option value="">파티 선택</option>` + options;
+  modal.classList.add("open");
+}
+
+function closePullModal(){
+  pullTarget = null;
+  document.getElementById("pull-modal").classList.remove("open");
+}
+
+function render(){
+  if(!profile) return;
+  const total = board.parties.reduce((sum, p) => sum + memberCount(p), 0);
+  const fullCount = board.parties.filter(p => memberCount(p) >= MAX_MEMBERS).length;
+  document.getElementById("stat-total").textContent = total;
+  document.getElementById("stat-parties").textContent = board.parties.length;
+  document.getElementById("stat-full").textContent = fullCount;
+  document.getElementById("nick-label").textContent = profile.nickname || "-";
+  document.getElementById("nick-avatar").textContent = initials(profile.nickname);
+  document.getElementById("nick-meta").textContent = [profile.class, ...(profile.skills || [])].filter(Boolean).join(" · ");
+  updateSyncLabel();
+  renderPresence();
+
+  const nomBox = document.getElementById("nominations");
+  const myNoms = board.nominations.filter(n => n.target === profile.nickname && n.status === "pending");
+  nomBox.innerHTML = myNoms.map(n => {
+    const party = board.parties.find(p => p.id === n.partyId);
+    const pname = party ? party.name : "(사라진 파티)";
+    return `
+      <div class="banner">
+        <div class="msg"><b>${escapeHtml(n.by)}</b>님이 당신을 <b>${escapeHtml(pname)}</b>(으)로 지명했습니다.</div>
+        <div class="btns">
+          <button class="btn primary sm" data-accept="${n.id}">수락</button>
+          <button class="btn ghost sm" data-decline="${n.id}">거절</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  const nominatePanelEl = document.getElementById("nominate-panel");
+  if(nominatePanelOpen){
+    const options = board.parties.map(p => {
+      const c = memberCount(p);
+      const full = c >= MAX_MEMBERS;
+      return `<option value="${p.id}" ${full ? "disabled" : ""}>${escapeHtml(p.name)} (${c}/${MAX_MEMBERS}${full ? " · 마감" : ""})</option>`;
+    }).join("");
+    nominatePanelEl.innerHTML = `
+      <div class="nominate-panel">
+        <label>닉네임</label>
+        <input type="text" id="nominate-target" placeholder="지명할 닉네임" maxlength="16" style="width:auto;" />
+        <label>보낼 파티</label>
+        <select id="nominate-party-select">
+          <option value="">파티 선택</option>
+          ${options}
+        </select>
+        <button class="btn primary sm" id="nominate-send">지명 보내기</button>
+        <button class="btn ghost sm" id="nominate-cancel">취소</button>
+      </div>`;
+  }else{
+    nominatePanelEl.innerHTML = "";
+  }
+
+  const boardEl = document.getElementById("board");
+  let html = `<div class="card new-card" id="new-card">
+      <div style="font-size:28px; line-height:1;">+</div>
+      <div style="margin-top:6px;">새 파티 만들기</div>
+    </div>`;
+
+  board.parties.forEach(party => {
+    const count = memberCount(party);
+    const isFull = count >= MAX_MEMBERS;
+    let slotsHtml = "";
+    party.slots.forEach((m, index) => {
+      if(m){
+        const name = memberName(m);
+        const isLeader = leaderName(party) === name;
+        const isMe = name === profile.nickname;
+        slotsHtml += `
+          <div class="slot filled ${isLeader ? "leader" : ""}" draggable="true"
+               data-drag-party="${party.id}" data-drag-index="${index}">
+            <div class="slot-main">
+              <span class="slot-name">${escapeHtml(name)}</span>
+              ${renderMemberTags(m)}
+            </div>
+            <span class="slot-right">
+              ${isLeader ? '<span class="badge">리더</span>' : `<button class="btn xs" data-set-leader="${party.id}" data-set-leader-name="${escapeHtml(name)}">리더로</button>`}
+              <button class="btn xs danger" data-remove-party="${party.id}" data-remove-index="${index}">${isMe ? "나가기" : "내보내기"}</button>
+            </span>
+          </div>`;
+      }else{
+        slotsHtml += `
+          <div class="slot empty" data-join-party="${party.id}" data-join-index="${index}"
+               data-drop-party="${party.id}" data-drop-index="${index}">빈 자리 · 눌러서 참가</div>`;
+      }
+    });
+
+    html += `
+      <div class="card ${isFull ? "full" : ""}">
+        <div class="card-head">
+          <div class="pname-wrap">
+            <span class="pname" title="${escapeHtml(party.name)}">${escapeHtml(party.name)}</span>
+            <button class="btn xs" data-rename-party="${party.id}" title="이름 수정">수정</button>
+          </div>
+          <span class="pcount mono ${isFull ? "full" : ""}">${count}/${MAX_MEMBERS}</span>
+        </div>
+        <div class="frame">${slotsHtml}</div>
+        ${count === 0 ? `
+        <div class="card-foot">
+          <button class="btn ghost sm" data-delete-party="${party.id}">파티 삭제</button>
+        </div>` : ""}
+      </div>`;
+  });
+
+  boardEl.innerHTML = html;
+  if(board.parties.length === 0){
+    boardEl.insertAdjacentHTML("beforeend", `<div class="empty-note" style="grid-column:1/-1;">아직 생성된 파티가 없습니다. 새 파티를 만들어 보세요.</div>`);
+  }
+  attachHandlers();
+}
+
+function attachHandlers(){
+  const newCard = document.getElementById("new-card");
+  if(newCard) newCard.onclick = createParty;
+
+  document.querySelectorAll("[data-join-party]").forEach(el => {
+    el.addEventListener("click", () => joinSlot(el.dataset.joinParty, Number(el.dataset.joinIndex)));
+  });
+  document.querySelectorAll("[data-remove-party]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeFromSlot(btn.dataset.removeParty, Number(btn.dataset.removeIndex));
+    });
+  });
+  document.querySelectorAll("[data-set-leader]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setLeader(btn.dataset.setLeader, btn.dataset.setLeaderName);
+    });
+  });
+  document.querySelectorAll("[data-delete-party]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteParty(btn.dataset.deleteParty);
+    });
+  });
+  document.querySelectorAll("[data-rename-party]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      renameParty(btn.dataset.renameParty);
+    });
+  });
+  const nominateBtn = document.getElementById("global-nominate-btn");
+  if(nominateBtn){
+    nominateBtn.onclick = () => {
+      nominatePanelOpen = !nominatePanelOpen;
+      uiBusy = nominatePanelOpen;
+      render();
+      if(nominatePanelOpen){
+        const input = document.getElementById("nominate-target");
+        if(input) input.focus();
+      }
+    };
+  }
+  const nominateCancel = document.getElementById("nominate-cancel");
+  if(nominateCancel){
+    nominateCancel.onclick = () => { nominatePanelOpen = false; uiBusy = false; render(); };
+  }
+  const nominateSend = document.getElementById("nominate-send");
+  if(nominateSend){
+    nominateSend.onclick = () => {
+      const target = document.getElementById("nominate-target").value;
+      const partyId = document.getElementById("nominate-party-select").value;
+      if(!partyId){ alert("보낼 파티를 선택하세요."); return; }
+      nominatePanelOpen = false;
+      uiBusy = false;
+      sendNomination(partyId, target);
+    };
+  }
+  document.querySelectorAll("[data-accept]").forEach(btn => {
+    btn.addEventListener("click", () => respondNomination(btn.dataset.accept, true));
+  });
+  document.querySelectorAll("[data-decline]").forEach(btn => {
+    btn.addEventListener("click", () => respondNomination(btn.dataset.decline, false));
+  });
+
+  document.querySelectorAll("[data-drag-party]").forEach(el => {
+    el.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", JSON.stringify({
+        partyId: el.dataset.dragParty, index: Number(el.dataset.dragIndex)
+      }));
+      e.dataTransfer.effectAllowed = "move";
+    });
+  });
+
+  document.querySelectorAll(".slot").forEach(el => {
+    el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("dragover"); });
+    el.addEventListener("dragleave", () => el.classList.remove("dragover"));
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.classList.remove("dragover");
+      let data;
+      try{ data = JSON.parse(e.dataTransfer.getData("text/plain")); }catch(err){ return; }
+      if(!data) return;
+      const toPartyId = el.dataset.dropParty || el.dataset.dragParty;
+      const toIndex = el.dataset.dropIndex !== undefined ? Number(el.dataset.dropIndex) : Number(el.dataset.dragIndex);
+      moveMember(data.partyId, data.index, toPartyId, toIndex);
+    });
+  });
+}
+
+async function refreshPresence(){
+  if(!supabaseClient) return;
+  try{
+    const since = new Date(Date.now() - ONLINE_TTL_MS * 2).toISOString();
+    const { data, error } = await supabaseClient
+      .from("presence")
+      .select("*")
+      .gte("last_seen", since)
+      .order("nickname");
+    if(error) throw error;
+    onlineUsers = data || [];
+    renderPresence();
+  }catch(e){
+    console.error("접속자 조회 오류", e);
+  }
+}
+
+async function heartbeat(){
+  if(!supabaseClient || !profile) return;
+  try{
+    await supabaseClient.from("presence").upsert({
+      client_id: clientId,
+      nickname: profile.nickname,
+      class: profile.class || "",
+      skills: profile.skills || [],
+      last_seen: new Date().toISOString()
+    }, { onConflict: "client_id" });
+  }catch(e){
+    console.error("heartbeat 오류", e);
+  }
+}
+
+async function pollLoop(){
+  if(uiBusy || saveInFlight > 0) return;
+  try{
+    const row = await fetchBoardRow();
+    if(row.version > boardVersion){
+      board = row.board;
+      boardVersion = row.version;
+      render();
+    }else{
+      updateSyncLabel();
+    }
+  }catch(e){}
+  await refreshPresence();
+}
+
+function startSync(){
+  if(pollTimer) return;
+  setupRealtime();
+  heartbeat();
+  refreshPresence();
+  loadChat();
+  pollTimer = setInterval(pollLoop, POLL_MS);
+  heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
+}
+
+async function enterApp(opts){
+  const playSound = !!(opts && opts.fanfare);
+  board = await fetchBoard();
+  render();
+  startSync();
+  if(playSound){
+    playFanfare();
+    await announceJoin();
+  }
+}
+
+async function logLogin(nickname){
+  let ip = null;
+  try{
+    const res = await fetch("https://api.ipify.org?format=json");
+    const json = await res.json();
+    ip = json.ip || null;
+  }catch(e){}
+  try{
+    await supabaseClient.from("login_logs").insert({
+      nickname,
+      ip,
+      user_agent: navigator.userAgent || null
+    });
+  }catch(e){
+    console.error("로그인 로그 실패", e);
+  }
+}
+
+async function verifyRoomPassword(password){
+  const { data, error } = await supabaseClient
+    .from("app_settings")
+    .select("value")
+    .eq("key", "room_password_hash")
+    .maybeSingle();
+  if(error) throw error;
+  if(!data?.value) throw new Error("입장 비밀번호가 설정되지 않았습니다. schema.sql을 실행하세요.");
+  const hash = await sha256Hex(password);
+  return hash === data.value;
+}
+
+function collectGateProfile(){
+  const nick = document.getElementById("gate-nick").value.trim().slice(0,16);
+  const cls = (document.querySelector('input[name="gate-class"]:checked') || {}).value || "";
+  const skills = Array.from(document.querySelectorAll("#gate-skills input:checked")).map(el => el.value);
+  const custom = document.getElementById("gate-skill-custom").value.trim().slice(0,16);
+  if(custom) skills.push(custom);
+  return { nickname: nick, class: cls, skills };
+}
+
+function showGate(){
+  document.getElementById("gate").style.display = "flex";
+  const saved = loadProfile();
+  if(saved){
+    document.getElementById("gate-nick").value = saved.nickname || "";
+    if(saved.class){
+      const radio = document.querySelector(`input[name="gate-class"][value="${saved.class}"]`);
+      if(radio) radio.checked = true;
+    }
+    document.querySelectorAll("#gate-skills input").forEach(el => {
+      el.checked = (saved.skills || []).includes(el.value);
+    });
+    const custom = (saved.skills || []).find(s => !SKILL_PRESETS.includes(s));
+    if(custom) document.getElementById("gate-skill-custom").value = custom;
+  }
+  document.getElementById("gate-password").focus();
+}
+
+async function boot(){
+  if(!initSupabase()) return;
+  clientId = getClientId();
+  profile = loadProfile();
+  if(!isAuthed() || !profile || !profile.nickname){
+    showGate();
+    return;
+  }
+  await enterApp();
+}
+
+document.getElementById("gate-submit").onclick = async () => {
+  const errEl = document.getElementById("gate-error");
+  errEl.textContent = "";
+  const password = document.getElementById("gate-password").value;
+  const next = collectGateProfile();
+  if(!password){ errEl.textContent = "비밀번호를 입력하세요."; return; }
+  if(!next.nickname){ errEl.textContent = "닉네임을 입력하세요."; return; }
+  if(!next.class){ errEl.textContent = "클래스를 선택하세요."; return; }
+
+  const btn = document.getElementById("gate-submit");
+  btn.disabled = true;
+  btn.textContent = "확인 중…";
+  try{
+    const ok = await verifyRoomPassword(password);
+    if(!ok){ errEl.textContent = "비밀번호가 올바르지 않습니다."; return; }
+    profile = next;
+    saveProfile(profile);
+    setAuthed(true);
+    await logLogin(profile.nickname);
+    document.getElementById("gate").style.display = "none";
+    await enterApp({ fanfare: true });
+  }catch(e){
+    errEl.textContent = e.message || "입장 실패";
+    console.error(e);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "입장하기";
+  }
+};
+
+document.getElementById("gate-nick").onkeydown = (e) => {
+  if(e.key === "Enter") document.getElementById("gate-submit").click();
+};
+document.getElementById("gate-password").onkeydown = (e) => {
+  if(e.key === "Enter") document.getElementById("gate-submit").click();
+};
+
+document.getElementById("pull-cancel").onclick = closePullModal;
+document.getElementById("pull-confirm").onclick = () => {
+  if(!pullTarget) return;
+  const partyId = document.getElementById("pull-party-select").value;
+  if(!partyId){ alert("파티를 선택하세요."); return; }
+  pullIntoParty(partyId, {
+    nickname: pullTarget.nickname,
+    class: pullTarget.class,
+    skills: pullTarget.skills || []
+  });
+  closePullModal();
+};
+document.getElementById("pull-modal").addEventListener("click", (e) => {
+  if(e.target.id === "pull-modal") closePullModal();
+});
+
+document.getElementById("chat-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = document.getElementById("chat-input");
+  const body = input.value;
+  input.value = "";
+  await sendChat(body);
+  input.focus();
+});
+
+document.getElementById("nick-edit").onclick = () => {
+  showGate();
+  document.getElementById("gate-password").value = "";
+  document.getElementById("gate-error").textContent = "프로필 변경 후 비밀번호를 다시 입력해 입장하세요.";
+};
+
+document.getElementById("logout-btn").onclick = async () => {
+  setAuthed(false);
+  try{
+    if(supabaseClient && clientId){
+      await supabaseClient.from("presence").delete().eq("client_id", clientId);
+    }
+  }catch(e){}
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  if(heartbeatTimer){ clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  location.reload();
+};
+
+window.addEventListener("beforeunload", () => {
+  // best-effort; may not always complete
+  if(supabaseClient && clientId){
+    supabaseClient.from("presence").delete().eq("client_id", clientId);
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
