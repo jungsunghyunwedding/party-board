@@ -1,1 +1,2 @@
 # 로컬 개발용 — 배포 repo에는 config.js 포함 (publishable key는 공개 키)
+config.js
