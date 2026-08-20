@@ -22,12 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build site with Supabase secrets
+      - name: Inject Supabase Secrets
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # Secret 확인
           if [ -z "$SUPABASE_URL" ]; then
             echo "ERROR: SUPABASE_URL is empty"
             exit 1
@@ -38,26 +37,15 @@ jobs:
             exit 1
           fi
 
-          # 배포 폴더 생성
-          mkdir -p _site
+          sed -i "s|__SUPABASE_URL__|$SUPABASE_URL|g" index.html
+          sed -i "s|__SUPABASE_ANON_KEY__|$SUPABASE_ANON_KEY|g" index.html
 
-          # 파일 복사
-          cp -r ./* _site/
-
-          # workflow 폴더는 제외
-          rm -rf _site/.github
-
-          # Secret 치환
-          sed -i "s|__SUPABASE_URL__|$SUPABASE_URL|g" _site/index.html
-          sed -i "s|__SUPABASE_ANON_KEY__|$SUPABASE_ANON_KEY|g" _site/index.html
-
-          # 치환 확인
-          if grep -q "__SUPABASE_URL__" _site/index.html; then
+          if grep -q "__SUPABASE_URL__" index.html; then
             echo "ERROR: SUPABASE_URL replacement failed"
             exit 1
           fi
 
-          if grep -q "__SUPABASE_ANON_KEY__" _site/index.html; then
+          if grep -q "__SUPABASE_ANON_KEY__" index.html; then
             echo "ERROR: SUPABASE_ANON_KEY replacement failed"
             exit 1
           fi
@@ -70,7 +58,7 @@ jobs:
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment
