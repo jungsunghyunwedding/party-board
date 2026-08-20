@@ -2,7 +2,8 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -20,29 +21,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create config.js from secrets
+      - name: Inject Supabase secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          cat > config.js <<'EOF'
-          window.SUPABASE_CONFIG = {
-            url: "${{ secrets.SUPABASE_URL }}",
-            anonKey: "${{ secrets.SUPABASE_ANON_KEY }}"
-          };
-          EOF
-
-      - name: Verify config.js
-        run: |
-          test -f config.js
-          grep "SUPABASE_CONFIG" config.js
-
-          if grep -q 'url: ""' config.js; then
-            echo "SUPABASE_URL is empty!"
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "SUPABASE_URL is empty"
             exit 1
           fi
 
-          if grep -q 'anonKey: ""' config.js; then
-            echo "SUPABASE_ANON_KEY is empty!"
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "SUPABASE_ANON_KEY is empty"
             exit 1
           fi
+
+          sed -i "s|__SUPABASE_URL__|$SUPABASE_URL|g" index.html
+          sed -i "s|__SUPABASE_ANON_KEY__|$SUPABASE_ANON_KEY|g" index.html
 
       - uses: actions/configure-pages@v5
 
